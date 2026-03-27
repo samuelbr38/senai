@@ -14,7 +14,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 float nivel = 0;
 int pwmBomba = 0;
 
-float setpoint = 50.0;
+float setpoint = 70.0;
 float histerese = 5.0;
 
 bool estadoBomba = false;
