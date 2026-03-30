@@ -1,4 +1,4 @@
-explique o codigo para eu apresentar : #include <LiquidCrystal_I2C.h>
+ #include <LiquidCrystal_I2C.h>
 
 #define TRIG 7
 #define ECHO 6
