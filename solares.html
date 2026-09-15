@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="solares.css" />
 </head>
 <body>
-  <!-- Bolha de rastreamento ocular -->
   <div class="gaze-bubble" id="gazeBubble">
     <div class="gaze-bubble-inner"></div>
     <svg class="gaze-ring" viewBox="0 0 100 100">
@@ -16,7 +15,6 @@
     </svg>
   </div>
 
-  <!-- Mini preview da câmera com quadrado de detecção -->
   <div class="cam-preview" id="camPreview">
     <video id="camVideo" autoplay playsinline muted></video>
     <canvas id="camOverlay"></canvas>
@@ -28,26 +26,27 @@
     <div class="mode-badge" id="modeBadge">Início</div>
   </header>
 
-  <!-- Overlay de carregamento -->
   <div class="cam-loading" id="camLoading">
     <div class="cam-loading-spinner"></div>
     <span>Iniciando câmera...</span>
     <span style="font-size:0.8rem;opacity:0.8;">Permita o acesso à câmera</span>
   </div>
 
-  <!-- Barra de status do olhar -->
+  <button class="voice-unlock" id="voiceUnlockBtn" style="display:none;">
+    🔊 Toque aqui para ativar a voz
+  </button>
+
   <div class="gaze-status" id="gazeStatus">
     <span class="gaze-dot" id="gazeDot"></span>
     <span id="gazeStatusText">Aguardando câmera...</span>
-    <button class="gaze-mode-btn" id="gazeModeBtn" title="Alternar modo de seleção">
-      👁️ Piscar + 👅 Língua
-    </button>
     <button class="gaze-mode-btn" id="gazeToggleBtn" title="Ativar/desativar seleção">
       ⏸ Pausar seleção
     </button>
   </div>
 
-  <!-- ===== TELA INICIAL ===== -->
+  <button class="scroll-btn scroll-up" id="scrollUpBtn" data-scroll="up">▲</button>
+  <button class="scroll-btn scroll-down" id="scrollDownBtn" data-scroll="down">▼</button>
+
   <div class="screen active" id="screenHome">
     <div class="welcome">
       <div class="welcome-icon">💙</div>
@@ -64,7 +63,7 @@
         <p>Controle tudo com os olhos. Pisque ou mostre a língua para selecionar.</p>
       </div>
       <div class="mode-arrow">→</div>
-      <div class="gaze-progress-bar" data-progress></div>
+      <div class="gaze-progress-bar"></div>
     </div>
 
     <div class="mode-card" id="cardTouch" data-mode="touch" data-gaze>
@@ -74,7 +73,7 @@
         <p>Para quem consegue tocar na tela. Varredura automática + toque.</p>
       </div>
       <div class="mode-arrow">→</div>
-      <div class="gaze-progress-bar" data-progress></div>
+      <div class="gaze-progress-bar"></div>
     </div>
 
     <div class="home-footer">
@@ -82,7 +81,6 @@
     </div>
   </div>
 
-  <!-- ===== TELA DO APP ===== -->
   <div class="screen" id="screenApp">
     <div class="status-bar">
       <div class="status-item">
@@ -101,27 +99,24 @@
 
     <div class="output-box" data-gaze>
       <span class="output-placeholder" id="ph">O texto aparece aqui...</span><span id="out"></span><span class="cursor" id="cur" style="display:none"></span>
+      <div class="gaze-progress-bar"></div>
     </div>
 
-    <!-- Frases rápidas -->
     <div class="quick-label">⚡ Frases Rápidas</div>
     <div class="quick-phrases" id="quickPhrases"></div>
 
-    <!-- Velocidade -->
     <div class="speed-row">
       <span>⚡ Varredura</span>
       <input type="range" min="500" max="3000" step="100" value="1200" oninput="updateSpeed(this.value)">
       <span id="speedLbl">1.2s</span>
     </div>
 
-    <!-- Teclado -->
     <div class="keyboard-header">
       <span id="currentGroup">Grupo 1: A - H</span>
       <button class="group-btn" id="groupBtn" data-gaze onclick="cycleGroup()">🔄 Trocar grupo</button>
     </div>
     <div class="keyboard" id="keyboard"></div>
 
-    <!-- Controles -->
     <div class="scan-controls">
       <div class="scan-info">Modo: <strong id="modeLbl">—</strong></div>
       <button class="scan-toggle" id="scanBtn" data-gaze onclick="toggleScan()">⏸ Pausar</button>
