@@ -1,20 +1,20 @@
-let txt = '';
+let txt = "";
 let scanIdx = 0;
 let scanIv = null;
 let scanSpeed = 1200;
 let paused = false;
 let toastTimer = null;
-let currentScreen = 'home';
+let currentScreen = "home";
 
 let camStream = null;
 let faceMesh = null;
 let mpCamera = null;
 let cameraReady = false;
 
-const camPreviewEl = document.getElementById('camPreview');
-const camVideoEl = document.getElementById('camVideo');
-const camOverlayEl = document.getElementById('camOverlay');
-const camPreviewLabelEl = document.getElementById('camPreviewLabel');
+const camPreviewEl = document.getElementById("camPreview");
+const camVideoEl = document.getElementById("camVideo");
+const camOverlayEl = document.getElementById("camOverlay");
+const camPreviewLabelEl = document.getElementById("camPreviewLabel");
 let camOverlayCtx = null;
 
 let gazeX = window.innerWidth / 2;
@@ -33,7 +33,7 @@ let faceMissingFrames = 0;
 const FACE_GRACE_FRAMES = 30;
 
 const EYE_CLOSED_RATIO = 0.35;
-const EYE_OPEN_RATIO = 0.50;
+const EYE_OPEN_RATIO = 0.5;
 let eyeOpenRatioBaseline = null;
 let eyeIsClosed = false;
 let eyeClosedSince = null;
@@ -64,77 +64,116 @@ const SCROLL_SPEED_FAST = 20;
 
 let voiceUnlocked = false;
 
-const gazeBubbleEl = document.getElementById('gazeBubble');
-const gazeRingFillEl = document.getElementById('gazeRingFill');
-const gazeDotEl = document.getElementById('gazeDot');
-const gazeStatusTextEl = document.getElementById('gazeStatusText');
-const gazeToggleBtnEl = document.getElementById('gazeToggleBtn');
-const camLoadingEl = document.getElementById('camLoading');
-const voiceGateEl = document.getElementById('voiceGate');
-const voiceGateBtnEl = document.getElementById('voiceGateBtn');
+const gazeBubbleEl = document.getElementById("gazeBubble");
+const gazeRingFillEl = document.getElementById("gazeRingFill");
+const gazeDotEl = document.getElementById("gazeDot");
+const gazeStatusTextEl = document.getElementById("gazeStatusText");
+const gazeToggleBtnEl = document.getElementById("gazeToggleBtn");
+const camLoadingEl = document.getElementById("camLoading");
+const voiceGateEl = document.getElementById("voiceGate");
+const voiceGateBtnEl = document.getElementById("voiceGateBtn");
 
-const phEl = document.getElementById('ph');
-const outEl = document.getElementById('out');
-const curEl = document.getElementById('cur');
-const keyboardEl = document.getElementById('keyboard');
-const quickPhrasesEl = document.getElementById('quickPhrases');
-const modeBadgeEl = document.getElementById('modeBadge');
-const modeLblEl = document.getElementById('modeLbl');
-const scanBtnEl = document.getElementById('scanBtn');
-const speedLblEl = document.getElementById('speedLbl');
-const toastEl = document.getElementById('toast');
+const phEl = document.getElementById("ph");
+const outEl = document.getElementById("out");
+const curEl = document.getElementById("cur");
+const keyboardEl = document.getElementById("keyboard");
+const quickPhrasesEl = document.getElementById("quickPhrases");
+const modeBadgeEl = document.getElementById("modeBadge");
+const modeLblEl = document.getElementById("modeLbl");
+const scanBtnEl = document.getElementById("scanBtn");
+const speedLblEl = document.getElementById("speedLbl");
+const toastEl = document.getElementById("toast");
 
-const camDotEl = document.getElementById('camDot');
-const camStatusTextEl = document.getElementById('camStatusText');
-const faceDotEl = document.getElementById('faceDot');
-const faceStatusTextEl = document.getElementById('faceStatusText');
-const gestureDotEl = document.getElementById('gestureDot');
-const gestureStatusTextEl = document.getElementById('gestureStatusText');
+const camDotEl = document.getElementById("camDot");
+const camStatusTextEl = document.getElementById("camStatusText");
+const faceDotEl = document.getElementById("faceDot");
+const faceStatusTextEl = document.getElementById("faceStatusText");
+const gestureDotEl = document.getElementById("gestureDot");
+const gestureStatusTextEl = document.getElementById("gestureStatusText");
 
-const scrollUpBtnEl = document.getElementById('scrollUpBtn');
-const scrollDownBtnEl = document.getElementById('scrollDownBtn');
+const scrollUpBtnEl = document.getElementById("scrollUpBtn");
+const scrollDownBtnEl = document.getElementById("scrollDownBtn");
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 46;
 
 const KEYS = [
-  'A','B','C','D','E','F','G','H','I',
-  'J','K','L','M','N','O','P','Q','R',
-  'S','T','U','V','W','X','Y','Z','0',
-  '1','2','3','4','5','6','7','8','9',
-  'ESPAÇO','⌫'
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+  "W",
+  "X",
+  "Y",
+  "Z",
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "ESPAÇO",
+  "⌫",
 ];
 
 const QUICK_PHRASES = [
-  'Sim', 'Não', 'Estou bem', 'Preciso de água',
-  'Chame alguém', 'Obrigado', 'Ajuda', 'Estou com dor'
+  "Sim",
+  "Não",
+  "Estou bem",
+  "Preciso de água",
+  "Chame alguém",
+  "Obrigado",
+  "Ajuda",
+  "Estou com dor",
 ];
 
-const scrollUpProgress = document.createElement('div');
-scrollUpProgress.className = 'scroll-progress';
+const scrollUpProgress = document.createElement("div");
+scrollUpProgress.className = "scroll-progress";
 scrollUpBtnEl.appendChild(scrollUpProgress);
 
-const scrollDownProgress = document.createElement('div');
-scrollDownProgress.className = 'scroll-progress';
+const scrollDownProgress = document.createElement("div");
+scrollDownProgress.className = "scroll-progress";
 scrollDownBtnEl.appendChild(scrollDownProgress);
 
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener("DOMContentLoaded", async () => {
   gazeRingFillEl.style.strokeDasharray = RING_CIRCUMFERENCE;
   gazeRingFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE;
   buildQuickPhrases();
   buildKeyboard();
-  camOverlayCtx = camOverlayEl.getContext('2d');
+  camOverlayCtx = camOverlayEl.getContext("2d");
   initVoices();
   setupVoiceGate();
 
   await initCamera();
   startGazeLoop();
 
-  scrollUpBtnEl.addEventListener('click', () => scrollUp());
-  scrollDownBtnEl.addEventListener('click', () => scrollDown());
+  scrollUpBtnEl.addEventListener("click", () => scrollUp());
+  scrollDownBtnEl.addEventListener("click", () => scrollDown());
 });
 
 function initVoices() {
-  if (!('speechSynthesis' in window)) return;
+  if (!("speechSynthesis" in window)) return;
   speechSynthesis.getVoices();
   if (speechSynthesis.onvoiceschanged !== undefined) {
     speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
@@ -142,8 +181,8 @@ function initVoices() {
 }
 
 function setupVoiceGate() {
-  if (!('speechSynthesis' in window)) {
-    voiceGateEl.classList.add('hidden');
+  if (!("speechSynthesis" in window)) {
+    voiceGateEl.classList.add("hidden");
     voiceUnlocked = true;
     return;
   }
@@ -154,60 +193,65 @@ function setupVoiceGate() {
 
     try {
       speechSynthesis.cancel();
-      const greeting = new SpeechSynthesisUtterance('Voz ativada');
-      greeting.lang = 'pt-BR';
+      const greeting = new SpeechSynthesisUtterance("Voz ativada");
+      greeting.lang = "pt-BR";
       greeting.rate = 1.0;
       greeting.pitch = 1.0;
       greeting.volume = 1.0;
 
       const voices = speechSynthesis.getVoices();
-      const ptVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('pt'));
+      const ptVoice = voices.find(
+        (v) => v.lang && v.lang.toLowerCase().startsWith("pt"),
+      );
       if (ptVoice) greeting.voice = ptVoice;
 
       greeting.onend = () => {
         voiceUnlocked = true;
-        voiceGateEl.classList.add('hidden');
-        showToast('✓ Voz ativada!');
+        voiceGateEl.classList.add("hidden");
+        showToast("✓ Voz ativada!");
       };
 
       greeting.onerror = () => {
         voiceUnlocked = true;
-        voiceGateEl.classList.add('hidden');
-        showToast('✓ Voz ativada!');
+        voiceGateEl.classList.add("hidden");
+        showToast("✓ Voz ativada!");
       };
 
       speechSynthesis.speak(greeting);
 
       setTimeout(() => {
         voiceUnlocked = true;
-        voiceGateEl.classList.add('hidden');
+        voiceGateEl.classList.add("hidden");
       }, 800);
-
     } catch (err) {
       console.warn(err);
       voiceUnlocked = true;
-      voiceGateEl.classList.add('hidden');
+      voiceGateEl.classList.add("hidden");
     }
   };
 
-  voiceGateBtnEl.addEventListener('click', activate);
-  voiceGateEl.addEventListener('click', activate);
-  voiceGateEl.addEventListener('touchstart', activate, { passive: true });
-  document.addEventListener('keydown', (e) => {
-    if (!voiceUnlocked) activate(e);
-  }, { once: true });
+  voiceGateBtnEl.addEventListener("click", activate);
+  voiceGateEl.addEventListener("click", activate);
+  voiceGateEl.addEventListener("touchstart", activate, { passive: true });
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (!voiceUnlocked) activate(e);
+    },
+    { once: true },
+  );
 }
 
 async function initCamera() {
   try {
     camStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: 'user',
+        facingMode: "user",
         width: { ideal: 640 },
         height: { ideal: 480 },
-        frameRate: { ideal: 30 }
+        frameRate: { ideal: 30 },
       },
-      audio: false
+      audio: false,
     });
 
     camVideoEl.srcObject = camStream;
@@ -219,22 +263,23 @@ async function initCamera() {
         camOverlayEl.height = camVideoEl.videoHeight;
       }
     }
-    camVideoEl.addEventListener('loadedmetadata', syncCanvasSize);
+    camVideoEl.addEventListener("loadedmetadata", syncCanvasSize);
     setTimeout(syncCanvasSize, 500);
 
-    if (typeof FaceMesh === 'undefined') {
-      throw new Error('FaceMesh não carregado');
+    if (typeof FaceMesh === "undefined") {
+      throw new Error("FaceMesh não carregado");
     }
 
     faceMesh = new FaceMesh({
-      locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`
+      locateFile: (f) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`,
     });
 
     faceMesh.setOptions({
       maxNumFaces: 1,
       refineLandmarks: true,
       minDetectionConfidence: 0.6,
-      minTrackingConfidence: 0.6
+      minTrackingConfidence: 0.6,
     });
 
     faceMesh.onResults(onFaceResults);
@@ -242,52 +287,54 @@ async function initCamera() {
     mpCamera = new Camera(camVideoEl, {
       onFrame: async () => await faceMesh.send({ image: camVideoEl }),
       width: 640,
-      height: 480
+      height: 480,
     });
     mpCamera.start();
 
     cameraReady = true;
-    camLoadingEl.classList.add('hidden');
-    gazeBubbleEl.classList.add('active');
-    setGazeStatus('active', 'Aguardando rosto...');
-    camPreviewEl.classList.remove('hidden');
-    camDotEl.className = 'status-dot active';
-    camStatusTextEl.textContent = 'Câmera ativa';
-
+    camLoadingEl.classList.add("hidden");
+    gazeBubbleEl.classList.add("active");
+    camPreviewEl.classList.remove("hidden");
+    camDotEl.className = "status-dot active";
+    camStatusTextEl.textContent = "Câmera ativa";
   } catch (e) {
     console.error(e);
-    camLoadingEl.classList.add('hidden');
-    setGazeStatus('error', '⚠️ Câmera indisponível — use o toque');
-    camPreviewEl.classList.add('hidden');
-    camDotEl.className = 'status-dot error';
-    camStatusTextEl.textContent = 'Câmera indisponível';
+    camLoadingEl.classList.add("hidden");
+    setGazeStatus("error", "⚠️ Câmera indisponível — use o toque");
+    camPreviewEl.classList.add("hidden");
+    camDotEl.className = "status-dot error";
+    camStatusTextEl.textContent = "Câmera indisponível";
   }
 }
 
 function setGazeStatus(state, text) {
-  gazeDotEl.className = 'gaze-dot ' + state;
+  gazeDotEl.className = "gaze-dot " + state;
   gazeStatusTextEl.textContent = text;
 }
 
 function onFaceResults(results) {
   const now = Date.now();
-  const hasFace = results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0;
+  const hasFace =
+    results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0;
 
   if (!hasFace) {
     faceMissingFrames++;
     faceDetected = false;
     faceBox = null;
 
-    if (now - lastFaceSeenAt > FACE_TIMEOUT && faceMissingFrames > FACE_GRACE_FRAMES) {
+    if (
+      now - lastFaceSeenAt > FACE_TIMEOUT &&
+      faceMissingFrames > FACE_GRACE_FRAMES
+    ) {
       if (selectionEnabled) {
         selectionEnabled = false;
-        gazeBubbleEl.classList.add('disabled');
-        setGazeStatus('warn', '👤 Nenhum rosto — seleção pausada');
-        camPreviewEl.classList.add('no-face');
-        camPreviewEl.classList.remove('face-detected');
-        camPreviewLabelEl.textContent = 'Sem rosto';
-        faceDotEl.className = 'status-dot warn';
-        faceStatusTextEl.textContent = 'Rosto não detectado';
+        gazeBubbleEl.classList.add("disabled");
+        setGazeStatus("warn", "👤 Nenhum rosto — seleção pausada");
+        camPreviewEl.classList.add("no-face");
+        camPreviewEl.classList.remove("face-detected");
+        camPreviewLabelEl.textContent = "Sem rosto";
+        faceDotEl.className = "status-dot warn";
+        faceStatusTextEl.textContent = "Rosto não detectado";
       }
     }
 
@@ -301,18 +348,21 @@ function onFaceResults(results) {
 
   if (!selectionEnabled) {
     selectionEnabled = true;
-    gazeBubbleEl.classList.remove('disabled');
-    setGazeStatus('active', 'Rastreamento ativo');
+    gazeBubbleEl.classList.remove("disabled");
+    setGazeStatus("active", "Rastreamento ativo");
   }
-  camPreviewEl.classList.remove('no-face');
-  camPreviewEl.classList.add('face-detected');
-  camPreviewLabelEl.textContent = '✓ Rosto detectado';
-  faceDotEl.className = 'status-dot active';
-  faceStatusTextEl.textContent = 'Rosto detectado';
+  camPreviewEl.classList.remove("no-face");
+  camPreviewEl.classList.add("face-detected");
+  camPreviewLabelEl.textContent = "✓ Rosto detectado";
+  faceDotEl.className = "status-dot active";
+  faceStatusTextEl.textContent = "Rosto detectado";
 
   const lm = results.multiFaceLandmarks[0];
 
-  let minX = 1, maxX = 0, minY = 1, maxY = 0;
+  let minX = 1,
+    maxX = 0,
+    minY = 1,
+    maxY = 0;
   for (const p of lm) {
     if (p.x < minX) minX = p.x;
     if (p.x > maxX) maxX = p.x;
@@ -325,7 +375,7 @@ function onFaceResults(results) {
     x: Math.max(0, minX - marginX),
     y: Math.max(0, minY - marginY),
     w: Math.min(1, maxX + marginX) - Math.max(0, minX - marginX),
-    h: Math.min(1, maxY + marginY) - Math.max(0, minY - marginY)
+    h: Math.min(1, maxY + marginY) - Math.max(0, minY - marginY),
   };
   drawOverlay(faceBox);
 
@@ -336,10 +386,12 @@ function onFaceResults(results) {
 
   const mirroredX = 1 - eyeCenterX;
 
-  const rangeX = 0.50;
+  const rangeX = 0.5;
   const rangeY = 0.42;
-  const rawScreenX = ((mirroredX - (0.5 - rangeX / 2)) / rangeX) * window.innerWidth;
-  const rawScreenY = ((eyeCenterY - (0.5 - rangeY / 2)) / rangeY) * window.innerHeight;
+  const rawScreenX =
+    ((mirroredX - (0.5 - rangeX / 2)) / rangeX) * window.innerWidth;
+  const rawScreenY =
+    ((eyeCenterY - (0.5 - rangeY / 2)) / rangeY) * window.innerHeight;
 
   const deadZone = 3;
   const dx = rawScreenX - smoothX;
@@ -347,7 +399,7 @@ function onFaceResults(results) {
   const dist = Math.sqrt(dx * dx + dy * dy);
 
   if (dist > deadZone) {
-    const damping = 0.30;
+    const damping = 0.3;
     velocityX = velocityX * 0.65 + dx * damping;
     velocityY = velocityY * 0.65 + dy * damping;
   } else {
@@ -386,7 +438,8 @@ function onFaceResults(results) {
   } else if (eyeAspectRatio > eyeOpenRatioBaseline) {
     eyeOpenRatioBaseline = eyeOpenRatioBaseline * 0.98 + eyeAspectRatio * 0.02;
   } else if (eyeAspectRatio > eyeOpenRatioBaseline * 0.7) {
-    eyeOpenRatioBaseline = eyeOpenRatioBaseline * 0.998 + eyeAspectRatio * 0.002;
+    eyeOpenRatioBaseline =
+      eyeOpenRatioBaseline * 0.998 + eyeAspectRatio * 0.002;
   }
 
   const closedRatio = eyeAspectRatio / Math.max(eyeOpenRatioBaseline, 0.001);
@@ -452,14 +505,14 @@ function onFaceResults(results) {
   tongueIsOut = tongueOutSince !== null;
 
   if (eyeIsClosed) {
-    gestureDotEl.className = 'status-dot active';
-    gestureStatusTextEl.textContent = '👁️ Olho fechado';
+    gestureDotEl.className = "status-dot active";
+    gestureStatusTextEl.textContent = "👁️ Olho fechado";
   } else if (tongueIsOut) {
-    gestureDotEl.className = 'status-dot active';
-    gestureStatusTextEl.textContent = '👅 Língua detectada';
+    gestureDotEl.className = "status-dot active";
+    gestureStatusTextEl.textContent = "👅 Língua detectada";
   } else {
-    gestureDotEl.className = 'status-dot';
-    gestureStatusTextEl.textContent = '—';
+    gestureDotEl.className = "status-dot";
+    gestureStatusTextEl.textContent = "—";
   }
 
   const target = focusedEl;
@@ -475,7 +528,7 @@ function onFaceResults(results) {
         eyeClosedSince = null;
         updateProgressBar(0, target);
         gazeRingFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE;
-        fireSelection('Piscada', target);
+        fireSelection("Piscada", target);
         return;
       }
     } else if (wasClosed) {
@@ -490,13 +543,14 @@ function onFaceResults(results) {
         tongueOutSince = null;
         updateProgressBar(0, target);
         gazeRingFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE;
-        fireSelection('Língua', target);
+        fireSelection("Língua", target);
         return;
       }
     }
 
     updateProgressBar(progressRatio, target);
-    gazeRingFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - progressRatio);
+    gazeRingFillEl.style.strokeDashoffset =
+      RING_CIRCUMFERENCE * (1 - progressRatio);
   } else {
     gazeRingFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE;
     updateProgressBar(0, focusedEl);
@@ -506,8 +560,10 @@ function onFaceResults(results) {
 }
 
 function isScrolling() {
-  return scrollUpBtnEl.classList.contains('scrolling') ||
-         scrollDownBtnEl.classList.contains('scrolling');
+  return (
+    scrollUpBtnEl.classList.contains("scrolling") ||
+    scrollDownBtnEl.classList.contains("scrolling")
+  );
 }
 
 function drawOverlay(box) {
@@ -525,9 +581,9 @@ function drawOverlay(box) {
   const bw = box.w * w;
   const bh = box.h * h;
 
-  camOverlayCtx.strokeStyle = '#10b981';
+  camOverlayCtx.strokeStyle = "#10b981";
   camOverlayCtx.lineWidth = 3;
-  camOverlayCtx.shadowColor = '#10b981';
+  camOverlayCtx.shadowColor = "#10b981";
   camOverlayCtx.shadowBlur = 10;
 
   const cornerLen = Math.min(bw, bh) * 0.25;
@@ -552,8 +608,8 @@ function drawOverlay(box) {
 
 function startGazeLoop() {
   function loop() {
-    gazeBubbleEl.style.left = gazeX + 'px';
-    gazeBubbleEl.style.top = gazeY + 'px';
+    gazeBubbleEl.style.left = gazeX + "px";
+    gazeBubbleEl.style.top = gazeY + "px";
 
     updateScrollButtons();
     updateFocusFromGaze();
@@ -567,8 +623,8 @@ function updateScrollButtons() {
   if (!selectionEnabled) {
     scrollHoldStart = 0;
     scrollLastDir = null;
-    scrollUpBtnEl.classList.remove('gaze-focus', 'scrolling', 'scroll-hover');
-    scrollDownBtnEl.classList.remove('gaze-focus', 'scrolling', 'scroll-hover');
+    scrollUpBtnEl.classList.remove("gaze-focus", "scrolling", "scroll-hover");
+    scrollDownBtnEl.classList.remove("gaze-focus", "scrolling", "scroll-hover");
     return;
   }
 
@@ -577,14 +633,20 @@ function updateScrollButtons() {
   const downRect = scrollDownBtnEl.getBoundingClientRect();
 
   const pad = 8;
-  const overUp = gazeX >= upRect.left - pad && gazeX <= upRect.right + pad &&
-                 gazeY >= upRect.top - pad && gazeY <= upRect.bottom + pad;
-  const overDown = gazeX >= downRect.left - pad && gazeX <= downRect.right + pad &&
-                   gazeY >= downRect.top - pad && gazeY <= downRect.bottom + pad;
+  const overUp =
+    gazeX >= upRect.left - pad &&
+    gazeX <= upRect.right + pad &&
+    gazeY >= upRect.top - pad &&
+    gazeY <= upRect.bottom + pad;
+  const overDown =
+    gazeX >= downRect.left - pad &&
+    gazeX <= downRect.right + pad &&
+    gazeY >= downRect.top - pad &&
+    gazeY <= downRect.bottom + pad;
 
   let dir = null;
-  if (overUp && !overDown) dir = 'up';
-  else if (overDown && !overUp) dir = 'down';
+  if (overUp && !overDown) dir = "up";
+  else if (overDown && !overUp) dir = "down";
 
   if (dir !== null) {
     scrollReleaseAt = now + SCROLL_RELEASE_GRACE;
@@ -596,18 +658,24 @@ function updateScrollButtons() {
     scrollHoldStart = dir ? now : 0;
     scrollLastDir = dir;
 
-    scrollUpBtnEl.classList.toggle('gaze-focus', dir === 'up');
-    scrollDownBtnEl.classList.toggle('gaze-focus', dir === 'down');
+    scrollUpBtnEl.classList.toggle("gaze-focus", dir === "up");
+    scrollDownBtnEl.classList.toggle("gaze-focus", dir === "down");
 
     if (!dir) {
-      scrollUpBtnEl.classList.remove('scrolling', 'scroll-hover');
-      scrollDownBtnEl.classList.remove('scrolling', 'scroll-hover');
+      scrollUpBtnEl.classList.remove("scrolling", "scroll-hover");
+      scrollDownBtnEl.classList.remove("scrolling", "scroll-hover");
     }
   }
 
   if (dir) {
-    scrollUpBtnEl.classList.toggle('scroll-hover', dir === 'up' && !scrollUpBtnEl.classList.contains('scrolling'));
-    scrollDownBtnEl.classList.toggle('scroll-hover', dir === 'down' && !scrollDownBtnEl.classList.contains('scrolling'));
+    scrollUpBtnEl.classList.toggle(
+      "scroll-hover",
+      dir === "up" && !scrollUpBtnEl.classList.contains("scrolling"),
+    );
+    scrollDownBtnEl.classList.toggle(
+      "scroll-hover",
+      dir === "down" && !scrollDownBtnEl.classList.contains("scrolling"),
+    );
 
     if (scrollHoldStart > 0) {
       const held = now - scrollHoldStart;
@@ -617,49 +685,54 @@ function updateScrollButtons() {
         if (held > 1200) speed = SCROLL_SPEED_MED;
         if (held > 2200) speed = SCROLL_SPEED_FAST;
 
-        window.scrollBy(0, dir === 'up' ? -speed : speed);
+        window.scrollBy(0, dir === "up" ? -speed : speed);
 
-        if (dir === 'up') scrollUpBtnEl.classList.add('scrolling');
-        else scrollDownBtnEl.classList.add('scrolling');
+        if (dir === "up") scrollUpBtnEl.classList.add("scrolling");
+        else scrollDownBtnEl.classList.add("scrolling");
       }
     }
   } else {
-    scrollUpBtnEl.classList.remove('scrolling');
-    scrollDownBtnEl.classList.remove('scrolling');
+    scrollUpBtnEl.classList.remove("scrolling");
+    scrollDownBtnEl.classList.remove("scrolling");
   }
 }
 
 function updateFocusFromGaze() {
   if (!selectionEnabled) {
     if (focusedEl) {
-      focusedEl.classList.remove('gaze-focus');
+      focusedEl.classList.remove("gaze-focus");
       focusedEl = null;
     }
-    gazeBubbleEl.classList.remove('target');
+    gazeBubbleEl.classList.remove("target");
     return;
   }
 
   if (isScrolling() || scrollLastDir) {
     if (focusedEl) {
-      focusedEl.classList.remove('gaze-focus');
+      focusedEl.classList.remove("gaze-focus");
       updateProgressBar(0, focusedEl);
       focusedEl = null;
     }
-    gazeBubbleEl.classList.toggle('target', true);
+    gazeBubbleEl.classList.toggle("target", true);
     return;
   }
 
-  const activeScreen = document.querySelector('.screen.active');
+  const activeScreen = document.querySelector(".screen.active");
   if (!activeScreen) return;
 
-  const candidates = Array.from(activeScreen.querySelectorAll('[data-gaze], .mode-card'))
-    .filter(el => {
-      const rect = el.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return false;
-      if (rect.bottom < 0 || rect.top > window.innerHeight) return false;
-      return gazeX >= rect.left && gazeX <= rect.right &&
-             gazeY >= rect.top && gazeY <= rect.bottom;
-    });
+  const candidates = Array.from(
+    activeScreen.querySelectorAll("[data-gaze], .mode-card"),
+  ).filter((el) => {
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+    if (rect.bottom < 0 || rect.top > window.innerHeight) return false;
+    return (
+      gazeX >= rect.left &&
+      gazeX <= rect.right &&
+      gazeY >= rect.top &&
+      gazeY <= rect.bottom
+    );
+  });
 
   let target = null;
 
@@ -671,38 +744,42 @@ function updateFocusFromGaze() {
 
   if (target !== focusedEl) {
     if (focusedEl) {
-      focusedEl.classList.remove('gaze-focus');
+      focusedEl.classList.remove("gaze-focus");
       updateProgressBar(0, focusedEl);
     }
     focusedEl = target;
 
     if (focusedEl) {
-      focusedEl.classList.add('gaze-focus');
+      focusedEl.classList.add("gaze-focus");
       focusStartTime = Date.now();
       eyeClosedSince = null;
       tongueOutSince = null;
     }
   }
 
-  gazeBubbleEl.classList.toggle('target', !!focusedEl);
+  gazeBubbleEl.classList.toggle("target", !!focusedEl);
 }
 
 function updateProgressBar(ratio, el) {
   const target = el || focusedEl;
   if (!target) return;
-  let bar = target.querySelector('.gaze-progress-bar');
+  let bar = target.querySelector(".gaze-progress-bar");
   if (!bar) {
-    if (target.tagName === 'BUTTON' || target.classList.contains('ctrl-btn') ||
-        target.classList.contains('quick-btn') || target.classList.contains('scroll-btn') ||
-        target.classList.contains('key')) {
-      bar = document.createElement('div');
-      bar.className = 'gaze-progress-bar';
-      target.style.position = 'relative';
-      target.style.overflow = 'hidden';
+    if (
+      target.tagName === "BUTTON" ||
+      target.classList.contains("ctrl-btn") ||
+      target.classList.contains("quick-btn") ||
+      target.classList.contains("scroll-btn") ||
+      target.classList.contains("key")
+    ) {
+      bar = document.createElement("div");
+      bar.className = "gaze-progress-bar";
+      target.style.position = "relative";
+      target.style.overflow = "hidden";
       target.appendChild(bar);
     }
   }
-  if (bar) bar.style.width = (ratio * 100) + '%';
+  if (bar) bar.style.width = ratio * 100 + "%";
 }
 
 function fireSelection(gestureName, targetEl) {
@@ -711,88 +788,88 @@ function fireSelection(gestureName, targetEl) {
 
   const mode = el.dataset.mode;
 
-  el.classList.add('gaze-selected');
-  setTimeout(() => el.classList.remove('gaze-selected'), 600);
-  gazeBubbleEl.classList.add('blinking');
-  setTimeout(() => gazeBubbleEl.classList.remove('blinking'), 400);
+  el.classList.add("gaze-selected");
+  setTimeout(() => el.classList.remove("gaze-selected"), 600);
+  gazeBubbleEl.classList.add("blinking");
+  setTimeout(() => gazeBubbleEl.classList.remove("blinking"), 400);
 
   gestureStatusTextEl.textContent = `✓ ${gestureName}!`;
-  gestureDotEl.className = 'status-dot active';
+  gestureDotEl.className = "status-dot active";
 
   if (mode) {
-    showToast(`✓ Modo ${mode === 'eye' ? 'Olhar' : 'Toque'} selecionado!`);
+    showToast(`✓ Modo ${mode === "eye" ? "Olhar" : "Toque"} selecionado!`);
     setTimeout(() => startMode(mode), 500);
     return;
   }
 
-  if (el.id === 'scanBtn') {
+  if (el.id === "scanBtn") {
     toggleScan();
-  } else if (el.id === 'speakBtn') {
+  } else if (el.id === "speakBtn") {
     speak();
-  } else if (el.id === 'clearBtn') {
+  } else if (el.id === "clearBtn") {
     clearText();
-  } else if (el.id === 'homeBtn') {
+  } else if (el.id === "homeBtn") {
     goHome();
-  } else if (el.classList.contains('quick-btn')) {
+  } else if (el.classList.contains("quick-btn")) {
     addPhrase(el.textContent.trim());
-  } else if (el.classList.contains('key')) {
+  } else if (el.classList.contains("key")) {
     selectKeyElement(el);
-  } else if (typeof el.onclick === 'function') {
+  } else if (typeof el.onclick === "function") {
     el.onclick();
   }
 }
 
 function scrollUp() {
-  window.scrollBy({ top: -window.innerHeight * 0.6, behavior: 'smooth' });
-  showToast('▲ Subindo...');
+  window.scrollBy({ top: -window.innerHeight * 0.6, behavior: "smooth" });
+  showToast("▲ Subindo...");
 }
 
 function scrollDown() {
-  window.scrollBy({ top: window.innerHeight * 0.6, behavior: 'smooth' });
-  showToast('▼ Descendo...');
+  window.scrollBy({ top: window.innerHeight * 0.6, behavior: "smooth" });
+  showToast("▼ Descendo...");
 }
 
 function buildKeyboard() {
-  keyboardEl.innerHTML = '';
-  KEYS.forEach(k => {
-    const div = document.createElement('div');
-    div.className = 'key';
+  keyboardEl.innerHTML = "";
+  KEYS.forEach((k) => {
+    const div = document.createElement("div");
+    div.className = "key";
     div.textContent = k;
-    div.dataset.gaze = '';
-    if (k === 'ESPAÇO') div.classList.add('space');
-    if (k === '⌫') div.classList.add('del');
+    div.dataset.gaze = "";
+    if (k === "ESPAÇO") div.classList.add("space");
+    if (k === "⌫") div.classList.add("del");
     keyboardEl.appendChild(div);
   });
 }
 
 function buildQuickPhrases() {
-  quickPhrasesEl.innerHTML = '';
-  QUICK_PHRASES.forEach(phrase => {
-    const btn = document.createElement('button');
-    btn.className = 'quick-btn';
-    btn.dataset.gaze = '';
+  quickPhrasesEl.innerHTML = "";
+  QUICK_PHRASES.forEach((phrase) => {
+    const btn = document.createElement("button");
+    btn.className = "quick-btn";
+    btn.dataset.gaze = "";
     btn.textContent = phrase;
     btn.onclick = () => addPhrase(phrase);
     quickPhrasesEl.appendChild(btn);
   });
 }
 
-const getKeys = () => document.querySelectorAll('.key');
+const getKeys = () => document.querySelectorAll(".key");
 
 function startScan() {
   stopScan();
   scanIdx = 0;
   paused = false;
-  scanBtnEl.textContent = '⏸ Pausar';
-  scanBtnEl.classList.remove('paused');
+  scanBtnEl.textContent = "⏸ Pausar";
+  scanBtnEl.classList.remove("paused");
 
   scanIv = setInterval(() => {
     if (paused) return;
     const ks = getKeys();
     if (!ks.length) return;
-    ks.forEach(k => k.classList.remove('scanning'));
+    ks.forEach((k) => k.classList.remove("scanning"));
     if (scanIdx >= ks.length) scanIdx = 0;
-    ks[scanIdx].classList.add('scanning');
+    ks[scanIdx].classList.add("scanning");
     scanIdx++;
   }, scanSpeed);
 }
@@ -800,13 +877,13 @@ function startScan() {
 function stopScan() {
   clearInterval(scanIv);
   scanIv = null;
-  getKeys().forEach(k => k.classList.remove('scanning'));
+  getKeys().forEach((k) => k.classList.remove("scanning"));
 }
 
 function toggleScan() {
   paused = !paused;
-  scanBtnEl.textContent = paused ? '▶ Retomar' : '⏸ Pausar';
-  scanBtnEl.classList.toggle('paused', paused);
+  scanBtnEl.textContent = paused ? "▶ Retomar" : "⏸ Pausar";
+  scanBtnEl.classList.toggle("paused", paused);
 }
 
 function selectCurrent() {
@@ -818,46 +895,46 @@ function selectCurrent() {
 
 function selectKeyElement(el) {
   const v = el.textContent.trim();
-  if (v === 'ESPAÇO') txt += ' ';
-  else if (v === '⌫') txt = txt.slice(0, -1);
+  if (v === "ESPAÇO") txt += " ";
+  else if (v === "⌫") txt = txt.slice(0, -1);
   else txt += v;
 
   updateOutput();
-  el.classList.add('selected');
-  setTimeout(() => el.classList.remove('selected'), 350);
-  showToast('✓ Letra selecionada!');
+  el.classList.add("selected");
+  setTimeout(() => el.classList.remove("selected"), 350);
+  showToast("✓ Letra selecionada!");
   scanIdx = 0;
 }
 
 function updateOutput() {
   if (txt.length) {
-    phEl.style.display = 'none';
-    curEl.style.display = 'inline-block';
+    phEl.style.display = "none";
+    curEl.style.display = "inline-block";
     outEl.textContent = txt;
   } else {
-    phEl.style.display = '';
-    curEl.style.display = 'none';
-    outEl.textContent = '';
+    phEl.style.display = "";
+    curEl.style.display = "none";
+    outEl.textContent = "";
   }
 }
 
 function addPhrase(phrase) {
-  if (txt.length && !txt.endsWith(' ')) txt += ' ';
+  if (txt.length && !txt.endsWith(" ")) txt += " ";
   txt += phrase;
   updateOutput();
-  showToast('✓ Frase adicionada!');
+  showToast("✓ Frase adicionada!");
   speak();
 }
 
 function speak() {
   const text = txt.trim();
   if (!text) {
-    showToast('⚠️ Nada para falar');
+    showToast("⚠️ Nada para falar");
     return;
   }
 
-  if (!('speechSynthesis' in window)) {
-    showToast('⚠️ Navegador sem suporte a voz');
+  if (!("speechSynthesis" in window)) {
+    showToast("⚠️ Navegador sem suporte a voz");
     return;
   }
 
@@ -865,24 +942,26 @@ function speak() {
     speechSynthesis.cancel();
 
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'pt-BR';
+    utter.lang = "pt-BR";
     utter.rate = 0.95;
     utter.pitch = 1.0;
     utter.volume = 1.0;
 
     const voices = speechSynthesis.getVoices();
-    const ptVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('pt'));
+    const ptVoice = voices.find(
+      (v) => v.lang && v.lang.toLowerCase().startsWith("pt"),
+    );
     if (ptVoice) utter.voice = ptVoice;
 
     utter.onstart = () => {
-      gestureStatusTextEl.textContent = '🔊 Falando...';
+      gestureStatusTextEl.textContent = "🔊 Falando...";
     };
     utter.onend = () => {
-      gestureStatusTextEl.textContent = '—';
+      gestureStatusTextEl.textContent = "—";
     };
     utter.onerror = (e) => {
-      console.warn('TTS error', e);
-      gestureStatusTextEl.textContent = '—';
+      console.warn("TTS error", e);
+      gestureStatusTextEl.textContent = "—";
     };
 
     speechSynthesis.speak(utter);
@@ -890,60 +969,59 @@ function speak() {
     setTimeout(() => {
       if (speechSynthesis.paused) speechSynthesis.resume();
     }, 100);
-
   } catch (err) {
     console.error(err);
-    showToast('⚠️ Erro ao falar');
+    showToast("⚠️ Erro ao falar");
   }
 }
 
 function clearText() {
-  txt = '';
+  txt = "";
   updateOutput();
 }
 
 function updateSpeed(v) {
   scanSpeed = parseInt(v);
-  speedLblEl.textContent = (scanSpeed / 1000).toFixed(1) + 's';
+  speedLblEl.textContent = (scanSpeed / 1000).toFixed(1) + "s";
   if (scanIv) startScan();
 }
 
-function showToast(msg = '✓ Selecionado!') {
+function showToast(msg = "✓ Selecionado!") {
   toastEl.textContent = msg;
-  toastEl.classList.add('show');
+  toastEl.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1500);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1500);
 }
 
 function startMode(mode) {
-  document.getElementById('screenHome').classList.remove('active');
-  document.getElementById('screenApp').classList.add('active');
-  currentScreen = 'app';
-  modeBadgeEl.textContent = mode === 'eye' ? '👁️ Olhar' : '👆 Toque';
-  modeLblEl.textContent = mode === 'eye' ? 'Olhar' : 'Toque';
+  document.getElementById("screenHome").classList.remove("active");
+  document.getElementById("screenApp").classList.add("active");
+  currentScreen = "app";
+  modeBadgeEl.textContent = mode === "eye" ? "👁️ Olhar" : "👆 Toque";
+  modeLblEl.textContent = mode === "eye" ? "Olhar" : "Toque";
   startScan();
   clearFocusState();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function goHome() {
   stopScan();
-  document.getElementById('screenApp').classList.remove('active');
-  document.getElementById('screenHome').classList.add('active');
-  currentScreen = 'home';
-  modeBadgeEl.textContent = 'Início';
-  txt = '';
+  document.getElementById("screenApp").classList.remove("active");
+  document.getElementById("screenHome").classList.add("active");
+  currentScreen = "home";
+  modeBadgeEl.textContent = "Início";
+  txt = "";
   updateOutput();
   clearFocusState();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function clearFocusState() {
   if (focusedEl) {
-    focusedEl.classList.remove('gaze-focus');
+    focusedEl.classList.remove("gaze-focus");
     focusedEl = null;
   }
-  gazeBubbleEl.classList.remove('target');
+  gazeBubbleEl.classList.remove("target");
   focusStartTime = 0;
   eyeClosedSince = null;
   tongueOutSince = null;
@@ -952,25 +1030,35 @@ function clearFocusState() {
   scrollHoldStart = 0;
   scrollLastDir = null;
   scrollReleaseAt = 0;
-  scrollUpBtnEl.classList.remove('gaze-focus', 'scrolling', 'scroll-hover', 'gaze-selected');
-  scrollDownBtnEl.classList.remove('gaze-focus', 'scrolling', 'scroll-hover', 'gaze-selected');
+  scrollUpBtnEl.classList.remove(
+    "gaze-focus",
+    "scrolling",
+    "scroll-hover",
+    "gaze-selected",
+  );
+  scrollDownBtnEl.classList.remove(
+    "gaze-focus",
+    "scrolling",
+    "scroll-hover",
+    "gaze-selected",
+  );
   updateProgressBar(0);
   gazeRingFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE;
 }
 
-gazeToggleBtnEl.addEventListener('click', () => {
+gazeToggleBtnEl.addEventListener("click", () => {
   selectionEnabled = !selectionEnabled;
   if (selectionEnabled) {
-    gazeToggleBtnEl.textContent = '⏸ Pausar seleção';
-    gazeToggleBtnEl.classList.remove('paused');
-    gazeBubbleEl.classList.remove('disabled');
-    showToast('✓ Seleção ativada');
+    gazeToggleBtnEl.textContent = "⏸ Pausar seleção";
+    gazeToggleBtnEl.classList.remove("paused");
+    gazeBubbleEl.classList.remove("disabled");
+    showToast("✓ Seleção ativada");
   } else {
-    gazeToggleBtnEl.textContent = '▶ Retomar seleção';
-    gazeToggleBtnEl.classList.add('paused');
-    gazeBubbleEl.classList.add('disabled');
+    gazeToggleBtnEl.textContent = "▶ Retomar seleção";
+    gazeToggleBtnEl.classList.add("paused");
+    gazeBubbleEl.classList.add("disabled");
     clearFocusState();
-    showToast('⏸ Seleção pausada');
+    showToast("⏸ Seleção pausada");
   }
 });
 

@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#1565c0" />
+    <title>SoLares Connect</title>
+    <link rel="stylesheet" href="solares.css" />
+  </head>
+  <body>
+    <div class="skip-link">
+      <a href="#screenHome">Pular para o conteúdo principal</a>
+    </div>
+
+    <div class="gaze-bubble" id="gazeBubble" aria-hidden="true">
+      <div class="gaze-bubble-inner"></div>
+      <svg class="gaze-ring" viewBox="0 0 100 100">
+        <circle class="gaze-ring-bg" cx="50" cy="50" r="46"></circle>
+        <circle
+          class="gaze-ring-fill"
+          id="gazeRingFill"
+          cx="50"
+          cy="50"
+          r="46"
+        ></circle>
+      </svg>
+    </div>
+
+    <div class="cam-preview" id="camPreview" aria-hidden="true">
+      <video id="camVideo" autoplay playsinline muted></video>
+      <canvas id="camOverlay"></canvas>
+      <div class="cam-preview-label" id="camPreviewLabel">Aguardando...</div>
+    </div>
+
+    <header>
+      <div class="logo">So<span>Lares</span> Connect</div>
+      <div class="mode-badge" id="modeBadge">Início</div>
+    </header>
+
+    <div class="cam-loading" id="camLoading" role="status" aria-live="polite">
+      <div class="cam-loading-spinner"></div>
+      <span>Iniciando câmera...</span>
+      <span style="font-size: 0.8rem; opacity: 0.8"
+        >Permita o acesso à câmera</span
+      >
+    </div>
+
+    <div
+      class="voice-gate"
+      id="voiceGate"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="voiceGateTitle"
+    >
+      <div class="voice-gate-box">
+        <div class="voice-gate-icon" aria-hidden="true">🔊</div>
+        <h2 id="voiceGateTitle">Ativar voz</h2>
+        <p>
+          O navegador precisa de <strong>um toque</strong> para liberar a fala.
+          Depois disso, você pode usar só com os olhos.
+        </p>
+        <button
+          class="voice-gate-btn"
+          id="voiceGateBtn"
+          aria-label="Ativar voz e começar"
+        >
+          🔊 Ativar voz e começar
+        </button>
+        <span class="voice-gate-hint"
+          >Toque em qualquer lugar da tela também funciona</span
+        >
+      </div>
+    </div>
+
+    <div class="gaze-status" id="gazeStatus" role="status" aria-live="polite">
+      <button
+        class="gaze-mode-btn"
+        id="gazeToggleBtn"
+        title="Ativar ou desativar seleção por olhar"
+        aria-label="Pausar seleção por olhar"
+        aria-pressed="false"
+      >
+        ⏸ Pausar seleção
+      </button>
+      <button
+        class="gaze-mode-btn"
+        id="emergencyBtn"
+        title="Abrir menu de emergência"
+        aria-label="Abrir menu de emergência"
+      >
+        🚨 Emergência
+      </button>
+    </div>
+
+    <button
+      class="scroll-btn scroll-up"
+      id="scrollUpBtn"
+      data-scroll="up"
+      aria-label="Rolar para cima"
+    >
+      ▲
+    </button>
+    <button
+      class="scroll-btn scroll-down"
+      id="scrollDownBtn"
+      data-scroll="down"
+      aria-label="Rolar para baixo"
+    >
+      ▼
+    </button>
+
+    <div class="screen active" id="screenHome" role="main">
+      <div class="welcome">
+        <div class="welcome-icon" aria-hidden="true">💙</div>
+        <h1>SoLares Connect</h1>
+        <p>
+          Olhe para uma opção e <strong>pisque devagar</strong> ou
+          <strong>ponha a língua pra fora</strong> para escolher.
+        </p>
+      </div>
+
+      <div class="mode-title">Escolha como deseja interagir</div>
+
+      <div
+        class="mode-card"
+        id="cardEye"
+        data-mode="eye"
+        data-gaze
+        role="button"
+        tabindex="0"
+        aria-label="Modo Olhar"
+      >
+        <div class="mode-icon" aria-hidden="true">👁️</div>
+        <div class="mode-content">
+          <h2>Modo Olhar</h2>
+          <p>
+            Controle tudo com os olhos. Pisque ou mostre a língua para
+            selecionar.
+          </p>
+        </div>
+        <div class="mode-arrow" aria-hidden="true">→</div>
+        <div class="gaze-progress-bar"></div>
+      </div>
+
+      <div
+        class="mode-card"
+        id="cardTouch"
+        data-mode="touch"
+        data-gaze
+        role="button"
+        tabindex="0"
+        aria-label="Modo Toque"
+      >
+        <div class="mode-icon" aria-hidden="true">👆</div>
+        <div class="mode-content">
+          <h2>Modo Toque</h2>
+          <p>Para quem consegue tocar na tela. Varredura automática + toque.</p>
+        </div>
+        <div class="mode-arrow" aria-hidden="true">→</div>
+        <div class="gaze-progress-bar"></div>
+      </div>
+
+      <div class="home-actions">
+        <button
+          class="home-action-btn"
+          id="calibrateBtn"
+          data-gaze
+          role="button"
+          aria-label="Calibrar olhar"
+        >
+          🎯 Calibrar olhar
+        </button>
+        <button
+          class="home-action-btn"
+          id="historyBtn"
+          data-gaze
+          role="button"
+          aria-label="Abrir histórico"
+        >
+          📜 Histórico
+        </button>
+        <button
+          class="home-action-btn"
+          id="settingsBtn"
+          data-gaze
+          role="button"
+          aria-label="Abrir configurações"
+        >
+          ⚙️ Configurações
+        </button>
+      </div>
+
+      <div class="home-footer">
+        <span>♿ Olhos ou toque • 🔵 Azul & Branco • 💡 Fácil de usar</span>
+      </div>
+    </div>
+
+    <div class="screen" id="screenApp" role="main">
+      <div class="status-bar">
+        <div class="status-item">
+          <span class="status-dot" id="camDot"></span>
+          <span id="camStatusText">Câmera ativa</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot" id="faceDot"></span>
+          <span id="faceStatusText">Aguardando rosto</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot" id="gestureDot"></span>
+          <span id="gestureStatusText" role="status" aria-live="polite">—</span>
+        </div>
+      </div>
+
+      <div class="output-box" data-gaze>
+        <span class="output-placeholder" id="ph">O texto aparece aqui...</span
+        ><span id="out" aria-live="polite"></span
+        ><span class="cursor" id="cur" style="display: none"></span>
+        <div class="gaze-progress-bar"></div>
+      </div>
+
+      <div class="suggestions-box" id="suggestionsBox">
+        <div class="suggestions-label">💡 Sugestões</div>
+        <div class="suggestions-list" id="suggestionsList"></div>
+      </div>
+
+      <div class="quick-label">⚡ Frases Rápidas</div>
+      <div class="quick-phrases" id="quickPhrases"></div>
+
+      <div class="speed-row">
+        <span>⚡ Varredura</span>
+        <input
+          type="range"
+          min="500"
+          max="3000"
+          step="100"
+          value="1200"
+          oninput="updateSpeed(this.value)"
+          aria-label="Velocidade da varredura"
+        />
+        <span id="speedLbl">1.2s</span>
+      </div>
+
+      <div class="keyboard-header">
+        <span>⌨️ Teclado completo</span>
+      </div>
+      <div class="keyboard" id="keyboard"></div>
+
+      <div class="scan-controls">
+        <div class="scan-info">Modo: <strong id="modeLbl">—</strong></div>
+        <button
+          class="scan-toggle"
+          id="scanBtn"
+          data-gaze
+          onclick="toggleScan()"
+        >
+          ⏸ Pausar
+        </button>
+      </div>
+
+      <div class="controls">
+        <button
+          class="ctrl-btn btn-speak"
+          id="speakBtn"
+          data-gaze
+          onclick="speak()"
+        >
+          🔊 Falar
+        </button>
+        <button
+          class="ctrl-btn btn-clear"
+          id="clearBtn"
+          data-gaze
+          onclick="clearText()"
+        >
+          🗑 Limpar
+        </button>
+        <button
+          class="ctrl-btn btn-home"
+          id="homeBtn"
+          data-gaze
+          onclick="goHome()"
+        >
+          🏠 Início
+        </button>
+      </div>
+    </div>
+
+    <div class="screen" id="screenCalibration" role="main">
+      <div class="calibration-intro" id="calibrationIntro">
+        <div class="welcome-icon" aria-hidden="true">🎯</div>
+        <h2>Calibração de Olhar</h2>
+        <p>
+          Vou mostrar <strong>5 pontos</strong> na tela, um de cada vez. Olhe
+          com calma. Quando seu olhar chegar e ficar estável, avanço sozinho.
+        </p>
+        <p class="calibration-hint">
+          Se travar, toque em <strong>Avançar</strong> no rodapé.
+        </p>
+        <button
+          class="ctrl-btn btn-speak"
+          id="calibrationStartBtn"
+          data-gaze
+        >
+          ▶ Começar calibração
+        </button>
+        <button
+          class="ctrl-btn btn-home"
+          id="calibrationCancelBtn"
+          data-gaze
+          onclick="goHome()"
+        >
+          ✕ Cancelar
+        </button>
+      </div>
+
+      <div class="calibration-stage hidden" id="calibrationStage">
+        <div class="calibration-progress">
+          <span id="calibrationStepLabel">Ponto 1 de 5</span>
+          <div class="calibration-progress-bar">
+            <div
+              class="calibration-progress-fill"
+              id="calibrationProgressFill"
+            ></div>
+          </div>
+        </div>
+
+        <div class="calibration-canvas" id="calibrationCanvas">
+          <div
+            class="calibration-target"
+            id="calibrationTarget"
+            aria-hidden="true"
+          >
+            <div class="calibration-target-inner"></div>
+            <div class="calibration-target-pulse"></div>
+          </div>
+        </div>
+
+        <p class="calibration-instruction" id="calibrationInstruction">
+          Olhe para o círculo verde
+        </p>
+
+        <div class="calibration-manual">
+          <button
+            class="calibration-skip-btn"
+            id="calibrationSkipBtn"
+            data-gaze
+          >
+            ⏭ Avançar
+          </button>
+          <button
+            class="calibration-skip-btn danger"
+            id="calibrationAbortBtn"
+            data-gaze
+          >
+            ✕ Cancelar
+          </button>
+        </div>
+      </div>
+
+      <div class="calibration-done hidden" id="calibrationDone">
+        <div class="welcome-icon" aria-hidden="true">✓</div>
+        <h2>Calibração concluída!</h2>
+        <p id="calibrationResultText">Sua calibração foi salva.</p>
+        <button
+          class="ctrl-btn btn-speak"
+          id="calibrationFinishBtn"
+          data-gaze
+          onclick="goHome()"
+        >
+          ✓ Concluir
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="panel-overlay"
+      id="historyPanel"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="panel-box">
+        <div class="panel-header">
+          <h2>📜 Histórico de frases</h2>
+          <button
+            class="panel-close"
+            id="historyCloseBtn"
+            data-gaze
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="panel-body" id="historyList"></div>
+        <div class="panel-footer">
+          <button
+            class="ctrl-btn btn-clear"
+            id="historyClearBtn"
+            data-gaze
+          >
+            🗑 Limpar tudo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="panel-overlay"
+      id="settingsPanel"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="panel-box">
+        <div class="panel-header">
+          <h2>⚙️ Configurações</h2>
+          <button
+            class="panel-close"
+            id="settingsCloseBtn"
+            data-gaze
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="panel-body">
+          <div class="settings-group">
+            <label for="caregiverPhone">Telefone do cuidador</label>
+            <input
+              type="tel"
+              id="caregiverPhone"
+              placeholder="+55 11 99999-9999"
+            />
+            <small>Usado apenas se você escolher "Ligar para cuidador".</small>
+          </div>
+          <div class="settings-group">
+            <label for="emergencyMessage">Mensagem falada na emergência</label>
+            <input
+              type="text"
+              id="emergencyMessage"
+              value="Preciso de ajuda"
+            />
+          </div>
+          <div class="settings-group">
+            <label for="callMessage">Mensagem falada na ligação</label>
+            <input
+              type="text"
+              id="callMessage"
+              value="Preciso de ajuda"
+            />
+          </div>
+          <div class="settings-group">
+            <label>
+              <input type="checkbox" id="hapticToggle" checked />
+              Vibração ao selecionar
+            </label>
+          </div>
+          <div class="settings-group">
+            <label>
+              <input type="checkbox" id="suggestionsToggle" checked />
+              Mostrar sugestões
+            </label>
+          </div>
+          <div class="settings-group">
+            <label>
+              <input type="checkbox" id="lowPowerToggle" />
+              Modo economia (menos FPS)
+            </label>
+          </div>
+        </div>
+        <div class="panel-footer">
+          <button
+            class="ctrl-btn btn-speak"
+            id="settingsSaveBtn"
+            data-gaze
+          >
+            ✓ Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="emergency-overlay hidden"
+      id="emergencyOverlay"
+      role="alertdialog"
+      aria-modal="true"
+    >
+      <div class="emergency-box">
+        <div class="emergency-icon" aria-hidden="true">🚨</div>
+        <h2>Emergência</h2>
+        <p id="emergencyText">O que você precisa?</p>
+
+        <div class="emergency-options" id="emergencyOptions">
+          <button
+            class="emergency-option primary"
+            id="emergencyHelpBtn"
+            data-gaze
+          >
+            <span class="emergency-option-icon" aria-hidden="true">📢</span>
+            <span class="emergency-option-label">Só pedir ajuda</span>
+            <span class="emergency-option-desc">Fala em voz alta em loop</span>
+          </button>
+
+          <button
+            class="emergency-option"
+            id="emergencyCallBtn"
+            data-gaze
+          >
+            <span class="emergency-option-icon" aria-hidden="true">📞</span>
+            <span class="emergency-option-label">Ligar para cuidador</span>
+            <span class="emergency-option-desc" id="emergencyCallDesc"
+              >Cadastre um telefone nas Configurações</span
+            >
+          </button>
+
+          <button
+            class="emergency-option cancel"
+            id="emergencyCancelBtn"
+            data-gaze
+          >
+            <span class="emergency-option-icon" aria-hidden="true">✕</span>
+            <span class="emergency-option-label">Cancelar</span>
+            <span class="emergency-option-desc">Fechar este menu</span>
+          </button>
+        </div>
+
+        <button
+          class="emergency-stop-btn hidden"
+          id="emergencyStopBtn"
+          data-gaze
+        >
+          ⏹ Parar pedido de ajuda
+        </button>
+      </div>
+    </div>
+
+    <div id="toast" role="status" aria-live="polite" aria-atomic="true">
+      ✓ Selecionado!
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="script.js"></script>
+  </body>
+</html>
