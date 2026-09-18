@@ -117,62 +117,25 @@
         <div class="welcome-icon" aria-hidden="true">💙</div>
         <h1>SoLares Connect</h1>
         <p>
-          Olhe para uma opção e <strong>pisque devagar</strong> ou
-          <strong>ponha a língua pra fora</strong> para escolher.
+          Olhe para uma opção e <strong>feche um olho</strong> ou
+          <strong>ponha a língua pra fora</strong> para escolher. Você também
+          pode tocar nos botões.
         </p>
-      </div>
-
-      <div class="mode-title">Escolha como deseja interagir</div>
-
-      <div
-        class="mode-card"
-        id="cardEye"
-        data-mode="eye"
-        data-gaze
-        role="button"
-        tabindex="0"
-        aria-label="Modo Olhar"
-      >
-        <div class="mode-icon" aria-hidden="true">👁️</div>
-        <div class="mode-content">
-          <h2>Modo Olhar</h2>
-          <p>
-            Controle tudo com os olhos. Pisque ou mostre a língua para
-            selecionar.
-          </p>
-        </div>
-        <div class="mode-arrow" aria-hidden="true">→</div>
-        <div class="gaze-progress-bar"></div>
-      </div>
-
-      <div
-        class="mode-card"
-        id="cardTouch"
-        data-mode="touch"
-        data-gaze
-        role="button"
-        tabindex="0"
-        aria-label="Modo Toque"
-      >
-        <div class="mode-icon" aria-hidden="true">👆</div>
-        <div class="mode-content">
-          <h2>Modo Toque</h2>
-          <p>Para quem consegue tocar na tela. Varredura automática + toque.</p>
-        </div>
-        <div class="mode-arrow" aria-hidden="true">→</div>
-        <div class="gaze-progress-bar"></div>
       </div>
 
       <div class="home-actions">
         <button
-          class="home-action-btn"
-          id="calibrateBtn"
+          class="home-action-btn big"
+          id="startBtn"
           data-gaze
           role="button"
-          aria-label="Calibrar olhar"
+          aria-label="Começar a usar"
         >
-          🎯 Calibrar olhar
+          ▶ Começar
         </button>
+      </div>
+
+      <div class="home-actions">
         <button
           class="home-action-btn"
           id="historyBtn"
@@ -229,36 +192,10 @@
       <div class="quick-label">⚡ Frases Rápidas</div>
       <div class="quick-phrases" id="quickPhrases"></div>
 
-      <div class="speed-row">
-        <span>⚡ Varredura</span>
-        <input
-          type="range"
-          min="500"
-          max="3000"
-          step="100"
-          value="1200"
-          oninput="updateSpeed(this.value)"
-          aria-label="Velocidade da varredura"
-        />
-        <span id="speedLbl">1.2s</span>
-      </div>
-
       <div class="keyboard-header">
         <span>⌨️ Teclado completo</span>
       </div>
       <div class="keyboard" id="keyboard"></div>
-
-      <div class="scan-controls">
-        <div class="scan-info">Modo: <strong id="modeLbl">—</strong></div>
-        <button
-          class="scan-toggle"
-          id="scanBtn"
-          data-gaze
-          onclick="toggleScan()"
-        >
-          ⏸ Pausar
-        </button>
-      </div>
 
       <div class="controls">
         <button
@@ -284,93 +221,6 @@
           onclick="goHome()"
         >
           🏠 Início
-        </button>
-      </div>
-    </div>
-
-    <div class="screen" id="screenCalibration" role="main">
-      <div class="calibration-intro" id="calibrationIntro">
-        <div class="welcome-icon" aria-hidden="true">🎯</div>
-        <h2>Calibração de Olhar</h2>
-        <p>
-          Vou mostrar <strong>5 pontos</strong> na tela, um de cada vez. Olhe
-          com calma. Quando seu olhar chegar e ficar estável, avanço sozinho.
-        </p>
-        <p class="calibration-hint">
-          Se travar, toque em <strong>Avançar</strong> no rodapé.
-        </p>
-        <button
-          class="ctrl-btn btn-speak"
-          id="calibrationStartBtn"
-          data-gaze
-        >
-          ▶ Começar calibração
-        </button>
-        <button
-          class="ctrl-btn btn-home"
-          id="calibrationCancelBtn"
-          data-gaze
-          onclick="goHome()"
-        >
-          ✕ Cancelar
-        </button>
-      </div>
-
-      <div class="calibration-stage hidden" id="calibrationStage">
-        <div class="calibration-progress">
-          <span id="calibrationStepLabel">Ponto 1 de 5</span>
-          <div class="calibration-progress-bar">
-            <div
-              class="calibration-progress-fill"
-              id="calibrationProgressFill"
-            ></div>
-          </div>
-        </div>
-
-        <div class="calibration-canvas" id="calibrationCanvas">
-          <div
-            class="calibration-target"
-            id="calibrationTarget"
-            aria-hidden="true"
-          >
-            <div class="calibration-target-inner"></div>
-            <div class="calibration-target-pulse"></div>
-          </div>
-        </div>
-
-        <p class="calibration-instruction" id="calibrationInstruction">
-          Olhe para o círculo verde
-        </p>
-
-        <div class="calibration-manual">
-          <button
-            class="calibration-skip-btn"
-            id="calibrationSkipBtn"
-            data-gaze
-          >
-            ⏭ Avançar
-          </button>
-          <button
-            class="calibration-skip-btn danger"
-            id="calibrationAbortBtn"
-            data-gaze
-          >
-            ✕ Cancelar
-          </button>
-        </div>
-      </div>
-
-      <div class="calibration-done hidden" id="calibrationDone">
-        <div class="welcome-icon" aria-hidden="true">✓</div>
-        <h2>Calibração concluída!</h2>
-        <p id="calibrationResultText">Sua calibração foi salva.</p>
-        <button
-          class="ctrl-btn btn-speak"
-          id="calibrationFinishBtn"
-          data-gaze
-          onclick="goHome()"
-        >
-          ✓ Concluir
         </button>
       </div>
     </div>

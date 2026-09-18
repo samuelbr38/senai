@@ -145,6 +145,9 @@ const QUICK_PHRASES = [
   "Chame alguém",
   "Obrigado",
   "Ajuda",
+  "Estou com fome",
+  "Estou com duvida",
+  "Pode explicar novamente?",
   "Estou com dor",
 ];
 

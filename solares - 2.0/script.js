@@ -1,11 +1,6 @@
 let txt = "";
-let scanIdx = 0;
-let scanIv = null;
-let scanSpeed = 1200;
-let paused = false;
 let toastTimer = null;
 let currentScreen = "home";
-let currentMode = "eye";
 
 let camStream = null;
 let faceMesh = null;
@@ -13,6 +8,8 @@ let cameraReady = false;
 let lastFrameTs = 0;
 let sendPending = false;
 let adaptiveIntervalMs = 66;
+
+const isAndroid = /Android/i.test(navigator.userAgent);
 
 const camPreviewEl = document.getElementById("camPreview");
 const camVideoEl = document.getElementById("camVideo");
@@ -33,7 +30,7 @@ let rawEyeY = 0.5;
 let hasEyeSample = false;
 
 let eyeSampleHistory = [];
-const EYE_HISTORY_SIZE = 8;
+const EYE_HISTORY_SIZE = 12;
 
 let faceDetected = false;
 let lastFaceSeenAt = 0;
@@ -81,31 +78,15 @@ const SCROLL_SPEED_FAST = 26;
 let voiceUnlocked = false;
 let audioContextUnlocked = false;
 
-let calibrationActive = false;
-let calibrationStep = 0;
-let calibrationPoints = [];
-let calibrationData = [];
-let calibrationCurrentSamples = [];
-let calibrationLastEye = null;
-let calibrationStableSince = null;
-let calibrationSampleStart = null;
-let calibrationMovedEnough = false;
-const CALIBRATION_TOTAL_STEPS = 5;
-const CALIBRATION_MOVE_THRESHOLD = 0.008;
-const CALIBRATION_STABLE_MS = 500;
-const CALIBRATION_SAMPLE_MS = 2000;
-const CALIBRATION_MAX_POINT_MS = 12000;
-let calibrationPointStartedAt = 0;
-let calibrationResolvedRanges = { rangeX: 0.06, rangeY: 0.05 };
+let calibrationResolvedRanges = { rangeX: 0.10, rangeY: 0.08 };
 
-const GAZE_SPEED_FACTOR = 0.04;
-const GAZE_DEAD_ZONE_PX = 15;
-const GAZE_SMOOTHING = 0.25;
+const GAZE_SPEED_FACTOR = 0.018;
+const GAZE_DEAD_ZONE_PX = 20;
+const GAZE_SMOOTHING = 0.18;
 
 const STORAGE_KEYS = {
-  calibration: "solares_calibration_v4",
   history: "solares_history_v1",
-  settings: "solares_settings_v4",
+  settings: "solares_settings_v5",
 };
 
 let caregiverPhone = "";
@@ -117,6 +98,8 @@ let lowPowerMode = false;
 
 let phraseHistory = [];
 const HISTORY_MAX = 20;
+
+let overlaySkipCounter = 0;
 
 const SUGGESTION_MAP = [
   { prefix: /(^|\s)preciso(\s+de)?$/i, items: ["água", "ajuda", "ir ao banheiro", "comer", "descansar", "remédio"] },
@@ -150,9 +133,6 @@ const curEl = $("cur");
 const keyboardEl = $("keyboard");
 const quickPhrasesEl = $("quickPhrases");
 const modeBadgeEl = $("modeBadge");
-const modeLblEl = $("modeLbl");
-const scanBtnEl = $("scanBtn");
-const speedLblEl = $("speedLbl");
 const toastEl = $("toast");
 
 const camDotEl = $("camDot");
@@ -192,19 +172,6 @@ const emergencyCancelBtnEl = $("emergencyCancelBtn");
 const emergencyStopBtnEl = $("emergencyStopBtn");
 const emergencyCallDescEl = $("emergencyCallDesc");
 
-const calibrationIntroEl = $("calibrationIntro");
-const calibrationStageEl = $("calibrationStage");
-const calibrationDoneEl = $("calibrationDone");
-const calibrationCanvasEl = $("calibrationCanvas");
-const calibrationTargetEl = $("calibrationTarget");
-const calibrationStepLabelEl = $("calibrationStepLabel");
-const calibrationProgressFillEl = $("calibrationProgressFill");
-const calibrationInstructionEl = $("calibrationInstruction");
-const calibrationStartBtnEl = $("calibrationStartBtn");
-const calibrationSkipBtnEl = $("calibrationSkipBtn");
-const calibrationAbortBtnEl = $("calibrationAbortBtn");
-const calibrationResultTextEl = $("calibrationResultText");
-
 const RING_CIRCUMFERENCE = 2 * Math.PI * 46;
 
 const KEYS = [
@@ -212,7 +179,14 @@ const KEYS = [
   "U","V","W","X","Y","Z","0","1","2","3","4","5","6","7","8","9","ESPAÇO","⌫",
 ];
 const QUICK_PHRASES = [
-  "Sim","Não","Estou bem","Preciso de água","Chame alguém","Obrigado","Ajuda","Estou com dor",
+   "Sim",
+  "Não",
+  "Estou bem",
+  "Ajuda",
+  "Chame alguém",
+  "Não entendi a matéria",
+  "Preciso ir ao banheiro",
+  "Pode repetir, por favor?",
 ];
 
 let cachedTargets = [];
@@ -228,13 +202,15 @@ window.addEventListener("DOMContentLoaded", () => {
   gazeRingFillEl.style.strokeDashoffset = RING_CIRCUMFERENCE;
 
   loadSettings();
-  loadCalibration();
   loadHistory();
   applyLowPowerClass();
 
   buildQuickPhrases();
   buildKeyboard();
-  camOverlayCtx = camOverlayEl.getContext("2d", { willReadFrequently: true });
+
+  camOverlayCtx = isAndroid
+    ? camOverlayEl.getContext("2d")
+    : camOverlayEl.getContext("2d", { willReadFrequently: true });
 
   unlockAudio();
   initVoices();
@@ -242,8 +218,8 @@ window.addEventListener("DOMContentLoaded", () => {
   setupKeyboardNavigation();
   setupPanelHandlers();
   setupEmergencyHandlers();
-  setupCalibrationHandlers();
   setupVisibilityOptimizations();
+  setupHomeButtons();
 
   scrollUpBtnEl.addEventListener("click", scrollUp, { passive: true });
   scrollDownBtnEl.addEventListener("click", scrollDown, { passive: true });
@@ -252,6 +228,22 @@ window.addEventListener("DOMContentLoaded", () => {
   setTimeout(initCamera, 30);
   startGazeLoop();
 });
+
+function setupHomeButtons() {
+  const startBtn = $("startBtn");
+  if (startBtn) startBtn.addEventListener("click", startApp);
+}
+
+function startApp() {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  document.getElementById("screenApp").classList.add("active");
+  currentScreen = "app";
+  modeBadgeEl.textContent = "👁️ Olhar";
+  clearFocusState();
+  cachedTargets = [];
+  cachedTargetsAt = 0;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 function unlockAudio() {
   const unlock = () => {
@@ -309,7 +301,12 @@ function setupVisibilityOptimizations() {
 function loadSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.settings);
-    if (!raw) return;
+    if (!raw) {
+      if (isAndroid) {
+        lowPowerMode = true;
+      }
+      return;
+    }
     const s = JSON.parse(raw);
     caregiverPhone = s.caregiverPhone || "";
     emergencyMessage = s.emergencyMessage || "Preciso de ajuda";
@@ -335,28 +332,11 @@ function saveSettings() {
 
 function applyLowPowerClass() {
   document.body.classList.toggle("low-power", lowPowerMode);
-  adaptiveIntervalMs = lowPowerMode ? 100 : 66;
-}
-
-function loadCalibration() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.calibration);
-    if (!raw) return;
-    const c = JSON.parse(raw);
-    if (c.rangeX && c.rangeY) {
-      calibrationResolvedRanges.rangeX = c.rangeX;
-      calibrationResolvedRanges.rangeY = c.rangeY;
-    }
-    if (c.blinkDuration) BLINK_DURATION = c.blinkDuration;
-    if (c.eyeClosedRatio) EYE_CLOSED_RATIO = c.eyeClosedRatio;
-    if (c.eyeOpenRatio) EYE_OPEN_RATIO = c.eyeOpenRatio;
-  } catch (e) {}
-}
-
-function saveCalibration(data) {
-  try {
-    localStorage.setItem(STORAGE_KEYS.calibration, JSON.stringify(data));
-  } catch (e) {}
+  if (isAndroid) {
+    adaptiveIntervalMs = lowPowerMode ? 130 : 90;
+  } else {
+    adaptiveIntervalMs = lowPowerMode ? 100 : 66;
+  }
 }
 
 function loadHistory() {
@@ -460,13 +440,22 @@ async function initCamera() {
   try {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error("Sem getUserMedia");
 
+    const videoConstraints = isAndroid
+      ? {
+          facingMode: "user",
+          width: { ideal: 320 },
+          height: { ideal: 240 },
+          frameRate: { ideal: 15, max: 20 },
+        }
+      : {
+          facingMode: "user",
+          width: { ideal: 480 },
+          height: { ideal: 360 },
+          frameRate: { ideal: 20, max: 24 },
+        };
+
     camStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "user",
-        width: { ideal: 480 },
-        height: { ideal: 360 },
-        frameRate: { ideal: 20, max: 24 },
-      },
+      video: videoConstraints,
       audio: false,
     });
 
@@ -491,8 +480,8 @@ async function initCamera() {
     faceMesh.setOptions({
       maxNumFaces: 1,
       refineLandmarks: false,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
+      minDetectionConfidence: isAndroid ? 0.6 : 0.5,
+      minTrackingConfidence: isAndroid ? 0.6 : 0.5,
     });
 
     faceMesh.onResults(onFaceResults);
@@ -517,23 +506,60 @@ async function initCamera() {
 }
 
 function pumpFrames() {
-  requestAnimationFrame(pumpFrames);
-  if (!faceMesh || !cameraReady) return;
-  if (document.hidden) return;
+  if (!faceMesh || !cameraReady) {
+    if (isAndroid) {
+      setTimeout(pumpFrames, 200);
+    } else {
+      requestAnimationFrame(pumpFrames);
+    }
+    return;
+  }
+
+  if (document.hidden || camVideoEl.readyState < 2) {
+    if (isAndroid) {
+      setTimeout(pumpFrames, 120);
+    } else {
+      requestAnimationFrame(pumpFrames);
+    }
+    return;
+  }
+
   const now = performance.now();
-  if (now - lastFrameTs < adaptiveIntervalMs) return;
-  if (sendPending) return;
-  if (camVideoEl.readyState < 2) return;
+  if (now - lastFrameTs < adaptiveIntervalMs || sendPending) {
+    if (isAndroid) {
+      setTimeout(pumpFrames, 25);
+    } else {
+      requestAnimationFrame(pumpFrames);
+    }
+    return;
+  }
 
   lastFrameTs = now;
   sendPending = true;
   const t0 = performance.now();
   faceMesh.send({ image: camVideoEl }).then(() => {
     const dt = performance.now() - t0;
-    if (dt > 100) adaptiveIntervalMs = Math.min(adaptiveIntervalMs + 8, 160);
-    else if (dt < 45) adaptiveIntervalMs = Math.max(adaptiveIntervalMs - 4, 50);
+    if (isAndroid) {
+      if (dt > 120) adaptiveIntervalMs = Math.min(adaptiveIntervalMs + 20, 220);
+      else if (dt < 70) adaptiveIntervalMs = Math.max(adaptiveIntervalMs - 6, 90);
+    } else {
+      if (dt > 100) adaptiveIntervalMs = Math.min(adaptiveIntervalMs + 8, 160);
+      else if (dt < 45) adaptiveIntervalMs = Math.max(adaptiveIntervalMs - 4, 50);
+    }
     sendPending = false;
-  }).catch(() => { sendPending = false; });
+    if (isAndroid) {
+      setTimeout(pumpFrames, Math.max(0, adaptiveIntervalMs - (performance.now() - t0)));
+    } else {
+      requestAnimationFrame(pumpFrames);
+    }
+  }).catch(() => {
+    sendPending = false;
+    if (isAndroid) {
+      setTimeout(pumpFrames, 150);
+    } else {
+      requestAnimationFrame(pumpFrames);
+    }
+  });
 }
 
 function onFaceResults(results) {
@@ -556,7 +582,7 @@ function onFaceResults(results) {
         faceStatusTextEl.textContent = "Rosto não detectado";
       }
     }
-    drawOverlay(null);
+    drawOverlayThrottled(null);
     return;
   }
 
@@ -591,7 +617,7 @@ function onFaceResults(results) {
     w: Math.min(1, maxX + mX) - Math.max(0, minX - mX),
     h: Math.min(1, maxY + mY) - Math.max(0, minY - mY),
   };
-  drawOverlay(faceBox);
+  drawOverlayThrottled(faceBox);
 
   const leftIris = lm[468];
   const rightIris = lm[473];
@@ -692,10 +718,14 @@ function onFaceResults(results) {
     gestureDotEl.className = "status-dot";
     gestureStatusTextEl.textContent = "—";
   }
+}
 
-  if (calibrationActive) {
-    updateCalibration(rawEyeX, rawEyeY, now);
+function drawOverlayThrottled(box) {
+  if (isAndroid) {
+    overlaySkipCounter++;
+    if (overlaySkipCounter % 3 !== 0) return;
   }
+  drawOverlay(box);
 }
 
 function updateGazeFromEye() {
@@ -728,8 +758,8 @@ function updateGazeFromEye() {
 
   const dist = Math.sqrt((targetX - smoothX) ** 2 + (targetY - smoothY) ** 2);
   if (dist > GAZE_DEAD_ZONE_PX) {
-    smoothX += (targetX - smoothX) * 0.08;
-    smoothY += (targetY - smoothY) * 0.08;
+    smoothX += (targetX - smoothX) * 0.04;
+    smoothY += (targetY - smoothY) * 0.04;
   }
 
   gazeX = Math.max(10, Math.min(window.innerWidth - 10, smoothX));
@@ -903,7 +933,7 @@ function updateFocusFromGaze() {
     const list = [];
     for (const c of containers) {
       const els = c.querySelectorAll(
-        "[data-gaze], .mode-card, .quick-btn, .suggestion-btn, .ctrl-btn, .scan-toggle, .home-action-btn, .history-repeat-btn, .emergency-option, .emergency-stop-btn, .calibration-skip-btn, .panel-close, .gaze-mode-btn, .scroll-btn"
+        "[data-gaze], .quick-btn, .suggestion-btn, .ctrl-btn, .home-action-btn, .history-repeat-btn, .emergency-option, .emergency-stop-btn, .panel-close, .gaze-mode-btn, .scroll-btn, .key"
       );
       for (const el of els) list.push(el);
     }
@@ -1010,25 +1040,17 @@ function fireSelection(gestureName, targetEl) {
   if (!el) return;
   haptic(50);
 
-  const mode = el.dataset.mode;
   el.classList.add("gaze-selected");
   setTimeout(() => el.classList.remove("gaze-selected"), 600);
 
   gestureStatusTextEl.textContent = `✓ ${gestureName}!`;
   gestureDotEl.className = "status-dot active";
 
-  if (mode) {
-    showToast(`✓ Modo ${mode === "eye" ? "Olhar" : "Toque"} selecionado!`);
-    setTimeout(() => startMode(mode), 500);
-    return;
-  }
-
   const id = el.id;
-  if (id === "scanBtn") toggleScan();
+  if (id === "startBtn") startApp();
   else if (id === "speakBtn") speak();
   else if (id === "clearBtn") clearText();
   else if (id === "homeBtn") goHome();
-  else if (id === "calibrateBtn") openCalibration();
   else if (id === "historyBtn") openHistoryPanel();
   else if (id === "settingsBtn") openSettingsPanel();
   else if (id === "emergencyBtn") openEmergencyMenu("Botão");
@@ -1040,9 +1062,6 @@ function fireSelection(gestureName, targetEl) {
   else if (id === "emergencyCallBtn") startEmergencyCall();
   else if (id === "emergencyCancelBtn") closeEmergencyMenu();
   else if (id === "emergencyStopBtn") stopEmergency();
-  else if (id === "calibrationStartBtn") startCalibration();
-  else if (id === "calibrationSkipBtn") skipCalibrationPoint();
-  else if (id === "calibrationAbortBtn") abortCalibration();
   else if (el.classList.contains("quick-btn")) addPhrase(el.textContent.trim());
   else if (el.classList.contains("suggestion-btn")) applySuggestion(el.textContent.trim());
   else if (el.classList.contains("history-repeat-btn")) speakText(el.dataset.text || "");
@@ -1092,36 +1111,6 @@ function buildQuickPhrases() {
 
 const getKeys = () => document.querySelectorAll(".key");
 
-function startScan() {
-  stopScan();
-  scanIdx = 0;
-  paused = false;
-  scanBtnEl.textContent = "⏸ Pausar";
-  scanBtnEl.classList.remove("paused");
-
-  scanIv = setInterval(() => {
-    if (paused || document.hidden) return;
-    const ks = getKeys();
-    if (!ks.length) return;
-    ks.forEach((k) => k.classList.remove("scanning"));
-    if (scanIdx >= ks.length) scanIdx = 0;
-    ks[scanIdx].classList.add("scanning");
-    scanIdx++;
-  }, scanSpeed);
-}
-
-function stopScan() {
-  clearInterval(scanIv);
-  scanIv = null;
-  getKeys().forEach((k) => k.classList.remove("scanning"));
-}
-
-function toggleScan() {
-  paused = !paused;
-  scanBtnEl.textContent = paused ? "▶ Retomar" : "⏸ Pausar";
-  scanBtnEl.classList.toggle("paused", paused);
-}
-
 function selectKeyElement(el) {
   const v = el.textContent.trim();
   if (v === "ESPAÇO") txt += " ";
@@ -1132,7 +1121,6 @@ function selectKeyElement(el) {
   setTimeout(() => el.classList.remove("selected"), 350);
   showToast("✓ Letra selecionada!");
   haptic(30);
-  scanIdx = 0;
 }
 
 function updateOutput() {
@@ -1192,12 +1180,6 @@ function clearText() {
   updateOutput();
 }
 
-function updateSpeed(v) {
-  scanSpeed = parseInt(v);
-  speedLblEl.textContent = (scanSpeed / 1000).toFixed(1) + "s";
-  if (scanIv) startScan();
-}
-
 function showToast(msg = "✓ Selecionado!") {
   toastEl.textContent = msg;
   toastEl.classList.add("show");
@@ -1205,23 +1187,7 @@ function showToast(msg = "✓ Selecionado!") {
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
 }
 
-function startMode(mode) {
-  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
-  document.getElementById("screenApp").classList.add("active");
-  currentScreen = "app";
-  currentMode = mode;
-  modeBadgeEl.textContent = mode === "eye" ? "👁️ Olhar" : "👆 Toque";
-  modeLblEl.textContent = mode === "eye" ? "Olhar" : "Toque";
-  if (mode === "touch") startScan();
-  else stopScan();
-  clearFocusState();
-  cachedTargets = [];
-  cachedTargetsAt = 0;
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
 function goHome() {
-  stopScan();
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   document.getElementById("screenHome").classList.add("active");
   currentScreen = "home";
@@ -1229,7 +1195,6 @@ function goHome() {
   txt = "";
   updateOutput();
   clearFocusState();
-  calibrationActive = false;
   cachedTargets = [];
   cachedTargetsAt = 0;
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1665,219 +1630,6 @@ function stopSpeakLoop() {
   emergencyUtterance = null;
 }
 
-function setupCalibrationHandlers() {
-  calibrationStartBtnEl.addEventListener("click", startCalibration);
-  calibrationSkipBtnEl.addEventListener("click", skipCalibrationPoint);
-  calibrationAbortBtnEl.addEventListener("click", abortCalibration);
-}
-
-function openCalibration() {
-  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
-  document.getElementById("screenCalibration").classList.add("active");
-  calibrationIntroEl.classList.remove("hidden");
-  calibrationStageEl.classList.add("hidden");
-  calibrationDoneEl.classList.add("hidden");
-  currentScreen = "calibration";
-  cachedTargets = [];
-  cachedTargetsAt = 0;
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function startCalibration() {
-  calibrationActive = true;
-  calibrationStep = 0;
-  calibrationData = [];
-  calibrationCurrentSamples = [];
-  calibrationLastEye = null;
-  calibrationStableSince = null;
-  calibrationSampleStart = null;
-  calibrationMovedEnough = false;
-  calibrationPointStartedAt = performance.now();
-
-  calibrationIntroEl.classList.add("hidden");
-  calibrationStageEl.classList.remove("hidden");
-  calibrationDoneEl.classList.add("hidden");
-
-  calibrationPoints = [
-    { x: 0.15, y: 0.20 },
-    { x: 0.85, y: 0.20 },
-    { x: 0.50, y: 0.50 },
-    { x: 0.15, y: 0.80 },
-    { x: 0.85, y: 0.80 },
-  ];
-
-  positionCalibrationTarget();
-  showToast("🎯 Olhe para o círculo verde");
-  cachedTargets = [];
-  cachedTargetsAt = 0;
-}
-
-function positionCalibrationTarget() {
-  if (calibrationStep >= CALIBRATION_TOTAL_STEPS) return;
-  const point = calibrationPoints[calibrationStep];
-  const canvasRect = calibrationCanvasEl.getBoundingClientRect();
-  calibrationTargetEl.style.left = (canvasRect.width * point.x) + "px";
-  calibrationTargetEl.style.top = (canvasRect.height * point.y) + "px";
-
-  calibrationStepLabelEl.textContent = `Ponto ${calibrationStep + 1} de ${CALIBRATION_TOTAL_STEPS}`;
-  calibrationProgressFillEl.style.width =
-    ((calibrationStep / CALIBRATION_TOTAL_STEPS) * 100) + "%";
-  calibrationInstructionEl.textContent = "Olhe para o círculo verde";
-}
-
-function updateCalibration(rawX, rawY, now) {
-  if (calibrationStep >= CALIBRATION_TOTAL_STEPS) return;
-
-  if (now - calibrationPointStartedAt > CALIBRATION_MAX_POINT_MS) {
-    calibrationInstructionEl.textContent = "Avançando automaticamente...";
-    finalizeCalibrationPoint();
-    return;
-  }
-
-  if (calibrationLastEye === null) {
-    calibrationLastEye = { x: rawX, y: rawY };
-    calibrationMovedEnough = true;
-    calibrationStableSince = now;
-    return;
-  }
-
-  const dx = rawX - calibrationLastEye.x;
-  const dy = rawY - calibrationLastEye.y;
-  const moved = Math.sqrt(dx * dx + dy * dy);
-  calibrationLastEye = { x: rawX, y: rawY };
-
-  if (!calibrationMovedEnough) {
-    if (moved > CALIBRATION_MOVE_THRESHOLD) {
-      calibrationMovedEnough = true;
-      calibrationStableSince = now;
-      calibrationInstructionEl.textContent = "Muito bem! Continue olhando...";
-    }
-    return;
-  }
-
-  calibrationCurrentSamples.push({ x: rawX, y: rawY });
-  if (calibrationCurrentSamples.length > 6) calibrationCurrentSamples.shift();
-
-  let meanX = 0, meanY = 0;
-  for (const s of calibrationCurrentSamples) { meanX += s.x; meanY += s.y; }
-  meanX /= calibrationCurrentSamples.length;
-  meanY /= calibrationCurrentSamples.length;
-
-  let varX = 0, varY = 0;
-  for (const s of calibrationCurrentSamples) {
-    varX += (s.x - meanX) ** 2;
-    varY += (s.y - meanY) ** 2;
-  }
-  const std = Math.sqrt((varX + varY) / calibrationCurrentSamples.length);
-
-  if (std < 0.012) {
-    if (calibrationStableSince === null) calibrationStableSince = now;
-  } else {
-    calibrationStableSince = now;
-  }
-
-  const stableFor = calibrationStableSince !== null ? now - calibrationStableSince : 0;
-
-  if (stableFor >= CALIBRATION_STABLE_MS) {
-    if (calibrationSampleStart === null) {
-      calibrationSampleStart = now;
-      calibrationInstructionEl.textContent = "Ótimo! Continue olhando...";
-    }
-
-    const sampleElapsed = now - calibrationSampleStart;
-    const ratio = Math.min(sampleElapsed / CALIBRATION_SAMPLE_MS, 1);
-    calibrationProgressFillEl.style.width =
-      (((calibrationStep + ratio) / CALIBRATION_TOTAL_STEPS) * 100) + "%";
-
-    if (sampleElapsed >= CALIBRATION_SAMPLE_MS) {
-      calibrationData.push({
-        eyeX: meanX,
-        eyeY: meanY,
-        targetX: calibrationPoints[calibrationStep].x,
-        targetY: calibrationPoints[calibrationStep].y,
-      });
-      finalizeCalibrationPoint();
-    }
-  }
-}
-
-function skipCalibrationPoint() {
-  if (!calibrationActive) return;
-  if (calibrationCurrentSamples.length > 3) {
-    let mx = 0, my = 0;
-    for (const s of calibrationCurrentSamples) { mx += s.x; my += s.y; }
-    mx /= calibrationCurrentSamples.length;
-    my /= calibrationCurrentSamples.length;
-    calibrationData.push({
-      eyeX: mx, eyeY: my,
-      targetX: calibrationPoints[calibrationStep].x,
-      targetY: calibrationPoints[calibrationStep].y,
-    });
-  }
-  finalizeCalibrationPoint();
-}
-
-function finalizeCalibrationPoint() {
-  calibrationStep++;
-  calibrationCurrentSamples = [];
-  calibrationLastEye = null;
-  calibrationStableSince = null;
-  calibrationSampleStart = null;
-  calibrationMovedEnough = false;
-  calibrationPointStartedAt = performance.now();
-
-  if (calibrationStep >= CALIBRATION_TOTAL_STEPS) {
-    completeCalibration();
-  } else {
-    positionCalibrationTarget();
-  }
-}
-
-function abortCalibration() {
-  calibrationActive = false;
-  goHome();
-}
-
-function completeCalibration() {
-  calibrationActive = false;
-  calibrationStageEl.classList.add("hidden");
-  calibrationDoneEl.classList.remove("hidden");
-
-  if (calibrationData.length < 3) {
-    calibrationResolvedRanges.rangeX = 0.06;
-    calibrationResolvedRanges.rangeY = 0.05;
-  } else {
-    let minEyeX = 1, maxEyeX = 0, minEyeY = 1, maxEyeY = 0;
-    for (const d of calibrationData) {
-      if (d.eyeX < minEyeX) minEyeX = d.eyeX;
-      if (d.eyeX > maxEyeX) maxEyeX = d.eyeX;
-      if (d.eyeY < minEyeY) minEyeY = d.eyeY;
-      if (d.eyeY > maxEyeY) maxEyeY = d.eyeY;
-    }
-
-    const eyeRangeX = Math.max(maxEyeX - minEyeX, 0.025);
-    const eyeRangeY = Math.max(maxEyeY - minEyeY, 0.02);
-
-    calibrationResolvedRanges.rangeX = Math.min(eyeRangeX * 1.25, 0.25);
-    calibrationResolvedRanges.rangeY = Math.min(eyeRangeY * 1.25, 0.20);
-  }
-
-  const data = {
-    rangeX: calibrationResolvedRanges.rangeX,
-    rangeY: calibrationResolvedRanges.rangeY,
-    blinkDuration: BLINK_DURATION,
-    eyeClosedRatio: EYE_CLOSED_RATIO,
-    eyeOpenRatio: EYE_OPEN_RATIO,
-    samples: calibrationData.length,
-    timestamp: Date.now(),
-  };
-  saveCalibration(data);
-
-  calibrationResultTextEl.textContent =
-    `${calibrationData.length} de ${CALIBRATION_TOTAL_STEPS} pontos calibrados.`;
-  showToast("✓ Calibração concluída!");
-}
-
 function setupKeyboardNavigation() {
   document.addEventListener("keydown", (e) => {
     const active = document.activeElement;
@@ -1913,11 +1665,8 @@ function setupKeyboardNavigation() {
   });
 }
 
-window.startMode = startMode;
 window.goHome = goHome;
 window.speak = speak;
 window.clearText = clearText;
-window.toggleScan = toggleScan;
-window.updateSpeed = updateSpeed;
 window.scrollUp = scrollUp;
 window.scrollDown = scrollDown;
